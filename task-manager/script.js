@@ -15,13 +15,39 @@ let tasks = [
         details: "Solve all the exercise questions and revise formulas.",
         priority: 2,
         done: true
+    },
+    {
+        id: 3,
+        name: "Host my projects",
+        description: "Put the task manager on GitHub Pages",
+        details: "Create repo, upload files, turn on Pages in settings.",
+        priority: 5,
+        done: true
+    },
+    {
+        id: 4,
+        name: "Buy groceries",
+        description: "Milk, eggs, bread and fruits",
+        details: "Check the fridge first so nothing gets bought twice.",
+        priority: 3,
+        done: false
     }
 ];
 
-let nextId = 3; // used to give every new task its own id
+let nextId = 5; // every new task gets its own id
+
+// the current state of the controls
+let searchText = "";
+let currentFilter = "all";   // all | active | done
+let currentSort = "newest";
 
 // ===== GRAB ELEMENTS =====
 const main = document.querySelector(".main");
+const counter = document.getElementById("counter");
+const searchInput = document.getElementById("searchInput");
+const filterButtons = document.querySelectorAll(".filter-btn");
+const sortSelect = document.getElementById("sortSelect");
+const clearDoneBtn = document.getElementById("clearDone");
 const addBtn = document.getElementById("add");
 const model = document.getElementById("model-box");
 const submitBtn = document.getElementById("addNewTask");
@@ -33,7 +59,9 @@ const detailView = document.getElementById("detail-view");
 const detailTitle = document.getElementById("detail-title");
 const detailText = document.getElementById("detail-text");
 
-// ===== STARS: loop 1 to 5 and fill stars up to the priority =====
+// ===== HELPERS =====
+
+// loop 1 to 5 and fill the stars up to the priority
 function createStars(priority, taskId) {
     let starsHTML = "";
     for (let i = 1; i <= 5; i++) {
@@ -48,16 +76,77 @@ function escapeHTML(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-// ===== SHOW TASKS: loop over the array and build a card for each =====
+// find one task object by its id
+function getTask(id) {
+    return tasks.find(t => t.id === Number(id));
+}
+
+// count how many tasks are done using a loop
+function updateCounter() {
+    let doneCount = 0;
+    tasks.forEach(task => {
+        if (task.done) {
+            doneCount++;
+        }
+    });
+    counter.textContent = doneCount + " / " + tasks.length + " done";
+}
+
+function closeAddPopup() {
+    model.style.display = "none";
+    nameInput.value = "";
+    descInput.value = "";
+    detailInput.value = "";
+}
+
+// ===== GET THE TASKS THAT SHOULD BE SHOWN =====
+// 1) filter by tab  2) filter by search  3) sort
+function getVisibleTasks() {
+    let list = tasks.filter(task => {
+        if (currentFilter === "active") return !task.done;
+        if (currentFilter === "done") return task.done;
+        return true; // "all"
+    });
+
+    const text = searchText.toLowerCase();
+    list = list.filter(task => {
+        return task.name.toLowerCase().includes(text) ||
+               task.description.toLowerCase().includes(text);
+    });
+
+    // sort a copy so the original order stays safe
+    list = [...list];
+    if (currentSort === "newest") {
+        list.sort((a, b) => b.id - a.id);
+    } else if (currentSort === "oldest") {
+        list.sort((a, b) => a.id - b.id);
+    } else if (currentSort === "priority-high") {
+        list.sort((a, b) => b.priority - a.priority);
+    } else if (currentSort === "priority-low") {
+        list.sort((a, b) => a.priority - b.priority);
+    } else if (currentSort === "name") {
+        list.sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    return list;
+}
+
+// ===== SHOW TASKS: loop over the visible array, build one row for each =====
 function showTasks() {
     main.innerHTML = "";
+    updateCounter();
 
-    if (tasks.length === 0) {
-        main.innerHTML = `<div class="empty">No tasks yet. Click + to add one!</div>`;
+    const visible = getVisibleTasks();
+
+    if (visible.length === 0) {
+        const message = tasks.length === 0
+            ? "No tasks yet. Click + to add one!"
+            : "No tasks match your search or filter.";
+        main.innerHTML = `<div class="empty">${message}</div>`;
         return;
     }
 
-    tasks.forEach(task => {
+    visible.forEach(task => {
         const box = document.createElement("div");
         box.classList.add("task-box");
         if (task.done) {
@@ -66,33 +155,64 @@ function showTasks() {
         box.dataset.id = task.id;
 
         box.innerHTML = `
-            <div class="task-name">${escapeHTML(task.name)}</div>
-            <div class="task-desc">${escapeHTML(task.description)}</div>
+            <button class="check" data-id="${task.id}" title="Mark done">${task.done ? "✓" : ""}</button>
+            <div class="task-info">
+                <div class="task-name">${escapeHTML(task.name)}</div>
+                <div class="task-desc">${escapeHTML(task.description)}</div>
+            </div>
             <div class="rating">
                 ${createStars(task.priority, task.id)}
                 <span class="rating-value">Priority ${task.priority}/5</span>
             </div>
-            <div class="card-buttons">
-                <button class="done-btn" data-id="${task.id}">${task.done ? "Undo" : "Done"}</button>
-                <button class="delete-btn" data-id="${task.id}">Delete</button>
-            </div>
+            <button class="delete-btn" data-id="${task.id}">Delete</button>
         `;
 
         main.appendChild(box);
     });
 }
 
+// ===== SEARCH, FILTER, SORT, CLEAR =====
+searchInput.addEventListener("input", () => {
+    searchText = searchInput.value.trim();
+    showTasks();
+});
+
+filterButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        currentFilter = btn.dataset.filter;
+
+        // move the "active" look to the clicked button
+        filterButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        showTasks();
+    });
+});
+
+sortSelect.addEventListener("change", () => {
+    currentSort = sortSelect.value;
+    showTasks();
+});
+
+clearDoneBtn.addEventListener("click", () => {
+    const doneCount = tasks.filter(t => t.done).length;
+    if (doneCount === 0) {
+        alert("No completed tasks to clear.");
+        return;
+    }
+    if (confirm("Remove " + doneCount + " completed task(s)?")) {
+        tasks = tasks.filter(t => !t.done);
+        showTasks();
+    }
+});
+
 // ===== ADD TASK =====
 addBtn.addEventListener("click", () => {
     model.style.display = "flex";
+    nameInput.focus();
 });
 
-cancelBtn.addEventListener("click", () => {
-    model.style.display = "none";
-    nameInput.value = "";
-    descInput.value = "";
-    detailInput.value = "";
-});
+cancelBtn.addEventListener("click", closeAddPopup);
 
 submitBtn.addEventListener("click", () => {
     const name = nameInput.value.trim();
@@ -104,7 +224,7 @@ submitBtn.addEventListener("click", () => {
         return;
     }
 
-    // a new object pushed into the array
+    // build a new object and push it into the array
     const newTask = {
         id: nextId,
         name: name,
@@ -116,31 +236,24 @@ submitBtn.addEventListener("click", () => {
     nextId++;
     tasks.push(newTask);
 
-    model.style.display = "none";
-    nameInput.value = "";
-    descInput.value = "";
-    detailInput.value = "";
-
+    closeAddPopup();
     showTasks();
 });
 
-// ===== CLICKS ON THE CARDS (one listener handles everything) =====
+// ===== CLICKS ON THE ROWS (one listener handles everything) =====
 main.addEventListener("click", (e) => {
     const target = e.target;
 
     // star clicked -> change priority
     if (target.classList.contains("star")) {
-        const id = Number(target.dataset.id);
-        const task = tasks.find(t => t.id === id);
-        task.priority = Number(target.dataset.value);
+        getTask(target.dataset.id).priority = Number(target.dataset.value);
         showTasks();
         return;
     }
 
-    // done / undo clicked -> flip done
-    if (target.classList.contains("done-btn")) {
-        const id = Number(target.dataset.id);
-        const task = tasks.find(t => t.id === id);
+    // tick button clicked -> flip done
+    if (target.classList.contains("check")) {
+        const task = getTask(target.dataset.id);
         task.done = !task.done;
         showTasks();
         return;
@@ -154,21 +267,34 @@ main.addEventListener("click", (e) => {
         return;
     }
 
-    // anywhere else on a card -> open detail view
+    // anywhere else on a row -> open detail view
     const clickedBox = target.closest(".task-box");
     if (clickedBox) {
-        const id = Number(clickedBox.dataset.id);
-        const task = tasks.find(t => t.id === id);
+        const task = getTask(clickedBox.dataset.id);
         detailTitle.textContent = task.name;
         detailText.textContent = task.details;
         detailView.style.display = "flex";
     }
 });
 
-// click the dark background to close the detail view
+// click the dark background to close a popup
 detailView.addEventListener("click", (e) => {
     if (e.target === detailView) {
         detailView.style.display = "none";
+    }
+});
+
+model.addEventListener("click", (e) => {
+    if (e.target === model) {
+        closeAddPopup();
+    }
+});
+
+// Escape key closes any popup
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+        detailView.style.display = "none";
+        closeAddPopup();
     }
 });
 

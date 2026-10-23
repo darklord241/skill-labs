@@ -11,12 +11,33 @@
 <div class="head">
     <div class="logo">📝</div>
     <div class="heading">Task Manager</div>
-    <div class="spacer"></div>
+    <div class="counter" id="counter"></div>
+</div>
+
+<!-- Search + filter + sort -->
+<div class="toolbar">
+    <input type="text" id="searchInput" placeholder="🔍 Search tasks...">
+
+    <div class="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="active">Active</button>
+        <button class="filter-btn" data-filter="done">Done</button>
+    </div>
+
+    <select id="sortSelect">
+        <option value="newest">Sort: Newest</option>
+        <option value="oldest">Sort: Oldest</option>
+        <option value="priority-high">Sort: Priority (high → low)</option>
+        <option value="priority-low">Sort: Priority (low → high)</option>
+        <option value="name">Sort: Name (A → Z)</option>
+    </select>
+
+    <button id="clearDone">Clear completed</button>
 </div>
 
 <div class="main"></div>
 
-<div class="add-button" id="add">+</div>
+<div class="add-button" id="add" title="Add task">+</div>
 
 <!-- Add task popup -->
 <div id="model-box">
@@ -25,8 +46,10 @@
         <input type="text" id="nameInput" placeholder="Task Name">
         <textarea id="descInput" placeholder="Short description"></textarea>
         <textarea id="detailInput" placeholder="Full details / steps"></textarea>
-        <button id="addNewTask">Add to list</button>
-        <button id="closeModel">Cancel</button>
+        <div class="modal-buttons">
+            <button id="addNewTask">Add to list</button>
+            <button id="closeModel">Cancel</button>
+        </div>
     </div>
 </div>
 

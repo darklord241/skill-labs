@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Task Manager</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="head">
+    <div class="logo">📝</div>
+    <div class="heading">Task Manager</div>
+    <div class="spacer"></div>
+</div>
+
+<div class="main"></div>
+
+<div class="add-button" id="add">+</div>
+
+<!-- Add task popup -->
+<div id="model-box">
+    <div class="content">
+        <h2>Add new Task</h2>
+        <input type="text" id="nameInput" placeholder="Task Name">
+        <textarea id="descInput" placeholder="Short description"></textarea>
+        <textarea id="detailInput" placeholder="Full details / steps"></textarea>
+        <button id="addNewTask">Add to list</button>
+        <button id="closeModel">Cancel</button>
+    </div>
+</div>
+
+<!-- Detail popup -->
+<div id="detail-view">
+    <div class="detail-content">
+        <h1 id="detail-title"></h1>
+        <p id="detail-text"></p>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
